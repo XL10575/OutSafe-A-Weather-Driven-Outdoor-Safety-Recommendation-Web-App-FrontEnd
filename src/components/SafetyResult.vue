@@ -23,21 +23,21 @@ const comparison = () => comparisonText(props.percentiles, props.yearsBack)
 
 <template>
   <div class="card">
-    <h2 style="margin-top: 0;">总评</h2>
+    <h2 style="margin-top: 0;">Summary</h2>
     <p>
       <span :class="['badge', badgeClass()]">{{ levelLabel(level) }}</span>
-      <span class="muted" style="margin-left: 0.5rem;">综合风险 {{ score }}%</span>
+      <span class="muted" style="margin-left: 0.5rem;">Overall risk {{ score }}%</span>
     </p>
     <div v-if="!hasHistory" class="no-history-tip">
-      <p>暂无历史同日数据，百分位为参考值（50% 表示无法与历史对比）。</p>
-      <p class="no-history-reasons">可能原因：请求了 {{ archiveRequested }} 年同日数据，成功 {{ archiveSuccess }} 条。若为 0，多为网络问题、Open-Meteo 限流，或该区域/日期暂无历史存档。</p>
+      <p>No same-day historical data available. Percentiles are approximate (50% means no historical comparison).</p>
+      <p class="no-history-reasons">Possible reasons: requested {{ archiveRequested }} years, succeeded {{ archiveSuccess }}. If 0, it is usually due to network issues, Open-Meteo rate limiting, or missing archives for that area/date.</p>
     </div>
 
     <div v-if="reasons().length" class="reason-block">
-      <h3 class="sub">关键原因</h3>
+      <h3 class="sub">Key drivers</h3>
       <ul class="reason-list">
         <li v-for="r in reasons()" :key="r.key">
-          {{ r.label }}：历史百分位 {{ r.pct }}%
+          {{ r.label }}: historical percentile {{ r.pct }}%
         </li>
       </ul>
     </div>

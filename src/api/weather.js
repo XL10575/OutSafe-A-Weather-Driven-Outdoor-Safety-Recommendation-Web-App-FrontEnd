@@ -1,7 +1,7 @@
 /**
- * Open-Meteo 天气 API（无需后端、无需 API Key）
- * Forecast: 今天/未来小时
- * Archive: 历史同日小时
+ * Open-Meteo Weather API (no backend, no API key required)
+ * Forecast: today / next hours
+ * Archive: historical same-day hours
  */
 
 const HOURLY = 'temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,windspeed_10m,windgusts_10m'
@@ -23,16 +23,16 @@ export async function fetchForecast({ lat, lon, elevation }) {
     url.searchParams.set('elevation', Math.round(elevation))
   }
   const res = await fetch(url.toString())
-  if (!res.ok) throw new Error(`Forecast API 错误: ${res.status}`)
+  if (!res.ok) throw new Error(`Forecast API error: ${res.status}`)
   return res.json()
 }
 
 /**
- * 拉取过去 N 年“同日”的小时数据（同月同日）
+ * Fetch same-day hourly data for the past N years (same month/day)
  * @param {{ lat: number, lon: number, elevation?: number, date: string, yearsBack?: number }} params
- *   date 格式 YYYY-MM-DD，取当天；yearsBack 默认 5
+ *   date format YYYY-MM-DD; yearsBack defaults to 5
  * @returns {Promise<{ list: ArchiveResponse[], requested: number }>}
- *   list: 成功返回的数据；requested: 请求的年数（便于无数据时提示）
+ *   list: successfully returned data; requested: requested years (for empty-data hints)
  */
 export async function fetchArchiveSameDay({ lat, lon, elevation, date, yearsBack = 5 }) {
   const [y] = date.split('-').map(Number)

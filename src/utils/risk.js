@@ -1,11 +1,11 @@
 /**
- * 对“今天”和每个历史年份做窗口聚合，再算历史百分位与综合风险分
+ * Aggregate today's window and each historical year's window, then compute percentiles and risk score
  */
 
 /**
- * 从 API 的 hourly 里取“当日”小时并做聚合，得到单日指标
+ * Select the hours for a given day from the API hourly series and aggregate day metrics
  * @param {Object} hourly - { time: string[], temperature_2m, ... }
- * @param {string} date - YYYY-MM-DD，只保留这一天的点
+ * @param {string} date - YYYY-MM-DD; keep only points for that date
  */
 export function aggregateDayMetrics(hourly, date) {
   if (!hourly?.time?.length) return null
@@ -36,7 +36,7 @@ export function aggregateDayMetrics(hourly, date) {
     precip_sum: sum(precip),
     wind_max: max(wind),
     gust_max: max(gust),
-    // 用于风险：体感最低、风最大、降水总量
+    // for risk: coldest feels-like, strongest wind, total precipitation
     risk_cold: min(appTemp),
     risk_wind: max(gust),
     risk_rain: sum(precip),
@@ -44,8 +44,7 @@ export function aggregateDayMetrics(hourly, date) {
 }
 
 /**
- * 计算 value 在 sortedArr 中的百分位 (0~100)
- * 越大表示越“极端”（越高/越低视指标而定）
+ * Percentile rank of value in an array (0~100)
  */
 function percentileRank(value, sortedArr) {
   if (!sortedArr.length) return 50
@@ -59,8 +58,8 @@ function percentileRank(value, sortedArr) {
 }
 
 /**
- * 风、降水等：越高越危险，百分位高 = 更极端
- * 体感温度：越低越危险，用 100 - 百分位 表示“多极端”
+ * Wind/precip: higher is riskier, higher percentile = more extreme
+ * Feels-like temperature: lower is riskier, use (100 - percentile) as "extremeness"
  */
 export function computePercentiles(todayMetrics, historyMetricsList) {
   if (!todayMetrics || !historyMetricsList?.length) return null
@@ -72,7 +71,7 @@ export function computePercentiles(todayMetrics, historyMetricsList) {
 
   const windPct = windVals.length ? percentileRank(todayMetrics.risk_wind, windVals) : 50
   const rainPct = rainVals.length ? percentileRank(todayMetrics.risk_rain, rainVals) : 50
-  // 体感越冷越危险：cold 越小越极端，用 100 - 百分位
+  // colder feels-like is riskier: smaller value is more extreme, use 100 - percentile
   const coldPct = coldVals.length ? 100 - percentileRank(todayMetrics.risk_cold, coldVals) : 50
 
   return {
@@ -83,8 +82,8 @@ export function computePercentiles(todayMetrics, historyMetricsList) {
 }
 
 /**
- * 综合风险分 0~100，越高越不推荐
- * 取各指标百分位的加权平均，再映射为总评
+ * Composite risk score 0~100; higher means less recommended
+ * Weighted average of percentiles, then mapped to a level
  */
 export function compositeRisk(percentiles, weights = { wind: 0.35, rain: 0.35, cold: 0.3 }) {
   if (!percentiles) return { score: 50, level: 'unknown' }
@@ -97,38 +96,43 @@ export function compositeRisk(percentiles, weights = { wind: 0.35, rain: 0.35, c
   return { score: Math.min(100, Math.max(0, score)), level }
 }
 
-/** 总评文案 */
+/** Summary label */
 export function levelLabel(level) {
-  const map = { not_recommended: '不建议', caution: '谨慎', recommended: '推荐', unknown: '未知' }
-  return map[level] ?? '未知'
+  const map = {
+    not_recommended: 'Not recommended',
+    caution: 'Use caution',
+    recommended: 'Recommended',
+    unknown: 'Unknown',
+  }
+  return map[level] ?? 'Unknown'
 }
 
 /**
- * 取 Top 2~3 指标（百分位从高到低）作为关键原因
+ * Take top 2~3 indicators (higher percentile first) as key drivers
  */
 export function topReasons(percentiles, limit = 3) {
   if (!percentiles) return []
   const items = [
-    { key: 'wind', label: '风', pct: percentiles.wind },
-    { key: 'rain', label: '降水', pct: percentiles.rain },
-    { key: 'cold', label: '体感寒冷', pct: percentiles.cold },
+    { key: 'wind', label: 'Wind', pct: percentiles.wind },
+    { key: 'rain', label: 'Precipitation', pct: percentiles.rain },
+    { key: 'cold', label: 'Feels-like cold', pct: percentiles.cold },
   ].filter(i => i.pct != null)
   items.sort((a, b) => b.pct - a.pct)
   return items.slice(0, limit)
 }
 
 /**
- * 生成“与过去 N 年相比”的文案
+ * Build a "compared with past N years" summary string
  */
 export function comparisonText(percentiles, n) {
   if (!percentiles) return ''
   const parts = []
-  if (percentiles.wind >= 70) parts.push(`风更极端（${percentiles.wind}%）`)
-  if (percentiles.rain >= 70) parts.push(`降水偏多（${percentiles.rain}%）`)
-  if (percentiles.cold >= 70) parts.push(`体感更冷（${percentiles.cold}%）`)
-  if (percentiles.wind <= 30) parts.push(`风较温和（${percentiles.wind}%）`)
-  if (percentiles.rain <= 30) parts.push(`降水较少（${percentiles.rain}%）`)
-  if (percentiles.cold <= 30) parts.push(`体感较暖（${percentiles.cold}%）`)
-  if (parts.length === 0) return `与过去 ${n} 年同日相比，整体接近历史水平。`
-  return `与过去 ${n} 年同日相比：${parts.join('，')}。`
+  if (percentiles.wind >= 70) parts.push(`more extreme wind (${percentiles.wind}%)`)
+  if (percentiles.rain >= 70) parts.push(`wetter than usual (${percentiles.rain}%)`)
+  if (percentiles.cold >= 70) parts.push(`colder feels-like (${percentiles.cold}%)`)
+  if (percentiles.wind <= 30) parts.push(`milder wind (${percentiles.wind}%)`)
+  if (percentiles.rain <= 30) parts.push(`drier than usual (${percentiles.rain}%)`)
+  if (percentiles.cold <= 30) parts.push(`warmer feels-like (${percentiles.cold}%)`)
+  if (parts.length === 0) return `Compared with the same day in the past ${n} years, conditions are close to typical.`
+  return `Compared with the same day in the past ${n} years: ${parts.join(', ')}.`
 }

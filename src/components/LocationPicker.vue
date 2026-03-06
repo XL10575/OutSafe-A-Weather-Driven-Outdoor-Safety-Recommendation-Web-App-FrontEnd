@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import MapPicker from './MapPicker.vue'
 
 const emit = defineEmits(['submit'])
-const lat = ref(39.9)
-const lon = ref(116.4)
+const lat = ref(41.4993)
+const lon = ref(-81.6944)
 const elevation = ref('')
 const yearsBack = ref(5)
 
@@ -26,28 +26,28 @@ function onSubmit() {
 
 <template>
   <div class="card">
-    <h2 style="margin-top: 0;">选择地点</h2>
-    <p class="muted" style="margin-bottom: 0.5rem;">点击地图或输入经纬度，时区将自动识别（timezone=auto）</p>
+    <h2 style="margin-top: 0;">Location</h2>
+    <p class="muted" style="margin-bottom: 0.5rem;">Click the map or enter coordinates. Timezone is detected automatically (timezone=auto).</p>
     <MapPicker :lat="lat" :lon="lon" @select="onMapSelect" />
     <div class="form-row">
       <div class="form-group">
-        <label>纬度</label>
-        <input v-model.number="lat" type="number" step="any" placeholder="39.9" />
+        <label>Latitude</label>
+        <input v-model.number="lat" type="number" step="any" placeholder="41.4993" />
       </div>
       <div class="form-group">
-        <label>经度</label>
-        <input v-model.number="lon" type="number" step="any" placeholder="116.4" />
+        <label>Longitude</label>
+        <input v-model.number="lon" type="number" step="any" placeholder="-81.6944" />
       </div>
     </div>
     <div class="form-group">
-      <label>海拔（米，可选）</label>
-      <input v-model="elevation" type="number" step="any" placeholder="留空则自动" />
+      <label>Elevation (m, optional)</label>
+      <input v-model="elevation" type="number" step="any" placeholder="Leave blank to auto-detect" />
     </div>
     <div class="form-group">
-      <label>对比历史年数（同日）</label>
+      <label>Past years to compare (same day)</label>
       <input v-model.number="yearsBack" type="number" min="1" max="10" />
     </div>
-    <button type="button" @click="onSubmit">获取户外安全建议</button>
+    <button type="button" @click="onSubmit">Get outdoor safety advice</button>
   </div>
 </template>
 

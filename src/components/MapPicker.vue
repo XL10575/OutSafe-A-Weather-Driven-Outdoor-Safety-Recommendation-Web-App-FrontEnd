@@ -4,8 +4,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const props = defineProps({
-  lat: { type: Number, default: 39.9 },
-  lon: { type: Number, default: 116.4 },
+  lat: { type: Number, default: 41.4993 },
+  lon: { type: Number, default: -81.6944 },
   zoom: { type: Number, default: 10 },
 })
 
@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="map-wrap">
-    <p class="map-hint">点击地图选择位置</p>
+    <p class="map-hint">Click the map to choose a location</p>
     <div ref="mapContainer" class="map-container"></div>
   </div>
 </template>

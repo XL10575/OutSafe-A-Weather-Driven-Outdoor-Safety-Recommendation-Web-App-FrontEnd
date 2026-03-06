@@ -19,7 +19,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
   result.value = null
 
   try {
-    // 先拉预报；API 的 hourly.time 是当地时区，用其日期避免 UTC 与当地日期不一致
+    // Fetch forecast first; hourly.time is in local timezone, avoid UTC/local date mismatch
     const forecast = await fetchForecast({ lat, lon, elevation })
     const queryDate =
       forecast.hourly?.time?.[0]?.slice(0, 10) ||
@@ -27,7 +27,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
 
     const todayMetrics = aggregateDayMetrics(forecast.hourly, queryDate)
     if (!todayMetrics) {
-      error.value = '无法解析今日小时数据'
+      error.value = "Couldn't parse today's hourly data"
       return
     }
 
@@ -38,7 +38,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
       date: queryDate,
       yearsBack,
     })
-    // 每年 archive 返回的是该年当日，需用该条数据的日期做聚合（不能用 queryDate）
+    // Each archive response is for that past year; aggregate using its own date (not queryDate)
     const historyMetricsList = archiveList.map((ar) => {
       const dateInArchive = ar.hourly?.time?.[0]?.slice(0, 10)
       return aggregateDayMetrics(ar.hourly, dateInArchive || queryDate)
@@ -57,7 +57,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
       archiveSuccess: archiveList.length,
     }
   } catch (e) {
-    error.value = e.message || '请求失败，请检查网络或稍后重试'
+    error.value = e.message || 'Request failed. Please check your network and try again.'
   } finally {
     loading.value = false
   }
@@ -65,9 +65,9 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
 </script>
 
 <template>
-  <h1 style="margin-bottom: 1rem;">OutSafe · 户外安全建议</h1>
+  <h1 style="margin-bottom: 1rem;">OutSafe · Outdoor Safety Advice</h1>
   <LocationPicker @submit="onLocationSubmit" />
-  <div v-if="loading" class="loading">正在拉取天气与历史数据…</div>
+  <div v-if="loading" class="loading">Fetching weather and historical data…</div>
   <p v-else-if="error" class="error">{{ error }}</p>
   <SafetyResult
     v-else-if="result"
