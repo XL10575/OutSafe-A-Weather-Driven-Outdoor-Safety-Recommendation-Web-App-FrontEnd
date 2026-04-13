@@ -30,12 +30,12 @@ const comparison = () => comparisonText(props.percentiles, props.yearsBack)
   <div class="card">
     <h2 style="margin-top: 0;">AI Outdoor Safety Advice</h2>
     <div v-if="!adviceApiConfigured" class="advice-skip muted">
-      didn't set <code>VITE_ADVICE_API_URL</code> so it won't request AI; below is the risk reference calculated by the local algorithm.
+      didn't set <code>VITE_GEMINI_API_KEY</code> so it won't request AI; below is the risk reference calculated by the local algorithm.
     </div>
     <div v-else-if="aiAdviceLoading" class="advice-loading">Generating advice based on your activity description…</div>
     <p v-else-if="aiAdviceError" class="advice-error">{{ aiAdviceError }}</p>
     <div v-else-if="aiAdvice" class="ai-advice-body">{{ aiAdvice }}</div>
-    <p v-else class="muted">No AI response (please check that the backend returns the advice / message / content / text fields in the JSON).</p>
+    <p v-else class="muted">No AI response (Gemini API returned an empty response).</p>
 
     <h2 class="section-title">Local risk reference (percentiles and composite score)</h2>
     <p>
