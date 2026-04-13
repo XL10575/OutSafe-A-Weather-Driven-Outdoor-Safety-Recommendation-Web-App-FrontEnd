@@ -11,6 +11,7 @@ import {
 } from './utils/risk'
 import LocationPicker from './components/LocationPicker.vue'
 import SafetyResult from './components/SafetyResult.vue'
+import DebugConsole from './components/DebugConsole.vue'
 
 const loading = ref(false)
 const error = ref('')
@@ -18,6 +19,7 @@ const result = ref(null) // { level, score, percentiles, yearsBack, ... }
 const aiAdvice = ref('')
 const aiAdviceLoading = ref(false)
 const aiAdviceError = ref('')
+const rawMeteoData = ref(null) // Stores raw Open-Meteo data for the debug console
 
 async function onLocationSubmit({ lat, lon, elevation, yearsBack, activityPrompt }) {
   loading.value = true
@@ -26,6 +28,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack, activityPrompt
   aiAdvice.value = ''
   aiAdviceError.value = ''
   aiAdviceLoading.value = false
+  rawMeteoData.value = null
 
   /** @type {ReturnType<typeof buildAdviceContext> | null} */
   let adviceContext = null
@@ -50,6 +53,11 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack, activityPrompt
       date: queryDate,
       yearsBack,
     })
+    
+    rawMeteoData.value = {
+      forecast,
+      archiveList
+    }
     const historyMetricsList = archiveList.flatMap((ar) =>
       aggregateMonthDailyFromHourly(ar.hourly)
     )
@@ -126,4 +134,6 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack, activityPrompt
     :ai-advice-loading="aiAdviceLoading"
     :ai-advice-error="aiAdviceError"
   />
+
+  <DebugConsole :data="rawMeteoData" />
 </template>
