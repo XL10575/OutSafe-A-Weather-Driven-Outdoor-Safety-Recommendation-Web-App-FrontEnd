@@ -14,6 +14,20 @@ const mapContainer = ref(null)
 let map = null
 let marker = null
 
+/** Leaflet can report lng outside ±180 after panning across the antimeridian; wrap to [-180, 180]. */
+function wrapLongitude(lng) {
+  if (lng >= -180 && lng <= 180) return lng
+  return ((((lng + 180) % 360) + 360) % 360) - 180
+}
+
+function clampLatitude(lat) {
+  return Math.min(90, Math.max(-90, lat))
+}
+
+function normalizeLatLng(lat, lng) {
+  return { lat: clampLatitude(lat), lon: wrapLongitude(lng) }
+}
+
 function initMap() {
   if (!mapContainer.value) return
   map = L.map(mapContainer.value).setView([props.lat, props.lon], props.zoom)
@@ -32,15 +46,17 @@ function initMap() {
 
   map.on('click', (e) => {
     const { lat, lng } = e.latlng
-    marker.setLatLng([lat, lng])
-    emit('select', { lat, lon: lng })
+    const { lat: nLat, lon: nLon } = normalizeLatLng(lat, lng)
+    marker.setLatLng([nLat, nLon])
+    emit('select', { lat: nLat, lon: nLon })
   })
 }
 
 function updateMarker(lat, lon) {
   if (!marker || !map) return
-  marker.setLatLng([lat, lon])
-  map.setView([lat, lon], map.getZoom())
+  const { lat: nLat, lon: nLon } = normalizeLatLng(lat, lon)
+  marker.setLatLng([nLat, nLon])
+  map.setView([nLat, nLon], map.getZoom())
 }
 
 watch(
