@@ -156,3 +156,65 @@ export function comparisonText(percentiles, n) {
   }
   return `Compared with daily conditions in the same calendar month over the past ${n} years: ${parts.join(', ')}.`
 }
+
+/**
+ * Serializable payload for an external “advice” API / LLM.
+ * Keeps raw metrics + percentile story so the model can judge fitness to the user’s activity.
+ *
+ * @param {{
+ *   queryDate: string,
+ *   todayMetrics: ReturnType<typeof aggregateDayMetrics>,
+ *   percentiles: ReturnType<typeof computePercentiles>,
+ *   score: number,
+ *   level: string,
+ *   yearsBack: number,
+ *   hasHistory: boolean,
+ *   archiveRequested?: number,
+ *   archiveSuccess?: number,
+ *   historySampleDays?: number,
+ * }} p
+ */
+export function buildAdviceContext(p) {
+  const {
+    queryDate,
+    todayMetrics,
+    percentiles,
+    score,
+    level,
+    yearsBack,
+    hasHistory,
+    archiveRequested,
+    archiveSuccess,
+    historySampleDays,
+  } = p
+  const reasons = topReasons(percentiles, 3)
+  return {
+    queryDate,
+    today_summary: todayMetrics
+      ? {
+          temp_max_c: todayMetrics.temp_max,
+          temp_min_c: todayMetrics.temp_min,
+          apparent_min_c: todayMetrics.apparent_min,
+          humidity_max_pct: todayMetrics.humidity_max,
+          precipitation_sum_mm: todayMetrics.precip_sum,
+          wind_max_ms: todayMetrics.wind_max,
+          gust_max_ms: todayMetrics.gust_max,
+        }
+      : null,
+    vs_same_month_history: {
+      years_compared: yearsBack,
+      has_history: hasHistory,
+      archive_requested: archiveRequested,
+      archive_success: archiveSuccess,
+      history_sample_days: historySampleDays,
+      percentiles: percentiles || null,
+      key_drivers: reasons.map((r) => ({ factor: r.key, label: r.label, percentile: r.pct })),
+      comparison_text: comparisonText(percentiles, yearsBack),
+    },
+    model_risk_index: {
+      score_0_to_100: score,
+      level,
+      note: 'Heuristic blend of wind/rain/cold percentiles; your backend should treat this as input, not a verdict.',
+    },
+  }
+}

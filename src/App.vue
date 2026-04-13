@@ -1,9 +1,11 @@
 <script setup>
 import { ref } from 'vue'
+import { fetchAiAdvice, isAdviceApiConfigured } from './api/advice'
 import { fetchForecast, fetchArchiveSameMonth } from './api/weather'
 import {
   aggregateDayMetrics,
   aggregateMonthDailyFromHourly,
+  buildAdviceContext,
   computePercentiles,
   compositeRisk,
 } from './utils/risk'
@@ -12,12 +14,21 @@ import SafetyResult from './components/SafetyResult.vue'
 
 const loading = ref(false)
 const error = ref('')
-const result = ref(null) // { level, score, percentiles, yearsBack }
+const result = ref(null) // { level, score, percentiles, yearsBack, ... }
+const aiAdvice = ref('')
+const aiAdviceLoading = ref(false)
+const aiAdviceError = ref('')
 
-async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
+async function onLocationSubmit({ lat, lon, elevation, yearsBack, activityPrompt }) {
   loading.value = true
   error.value = ''
   result.value = null
+  aiAdvice.value = ''
+  aiAdviceError.value = ''
+  aiAdviceLoading.value = false
+
+  /** @type {ReturnType<typeof buildAdviceContext> | null} */
+  let adviceContext = null
 
   try {
     // Fetch forecast first; hourly.time is in local timezone, avoid UTC/local date mismatch
@@ -56,10 +67,41 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
       archiveSuccess: archiveList.length,
       historySampleDays: validHistory.length,
     }
+
+    adviceContext = buildAdviceContext({
+      queryDate,
+      todayMetrics,
+      percentiles,
+      score,
+      level,
+      yearsBack,
+      hasHistory: validHistory.length > 0,
+      archiveRequested,
+      archiveSuccess: archiveList.length,
+      historySampleDays: validHistory.length,
+    })
   } catch (e) {
     error.value = e.message || 'Request failed. Please check your network and try again.'
   } finally {
     loading.value = false
+  }
+
+  if (!adviceContext || !isAdviceApiConfigured()) return
+
+  aiAdviceLoading.value = true
+  try {
+    aiAdvice.value = await fetchAiAdvice({
+      userPrompt: activityPrompt || '',
+      context: adviceContext,
+    })
+  } catch (e) {
+    if (e?.code === 'ADVICE_API_NOT_CONFIGURED') {
+      aiAdviceError.value = ''
+    } else {
+      aiAdviceError.value = e?.message || 'AI returned wrong response'
+    }
+  } finally {
+    aiAdviceLoading.value = false
   }
 }
 </script>
@@ -79,5 +121,9 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
     :archive-requested="result.archiveRequested"
     :archive-success="result.archiveSuccess"
     :history-sample-days="result.historySampleDays"
+    :advice-api-configured="isAdviceApiConfigured()"
+    :ai-advice="aiAdvice"
+    :ai-advice-loading="aiAdviceLoading"
+    :ai-advice-error="aiAdviceError"
   />
 </template>
