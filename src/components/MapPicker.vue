@@ -37,14 +37,20 @@ function invalidate() {
 }
 
 function popupHtml(lat, lon) {
-  return `<div class="map-popup-inner"><strong>已选坐标</strong><br/><span class="map-popup-coords">${lat.toFixed(
+  return `<div class="map-popup-inner"><strong>Selected Location</strong><br/><span class="map-popup-coords">${lat.toFixed(
     5
-  )}, ${lon.toFixed(5)}</span><br/><span class="map-popup-hint">在右侧确认并分析</span></div>`
+  )}, ${lon.toFixed(5)}</span><br/><span class="map-popup-hint">Confirm on the left panel</span></div>`
 }
 
 function initMap() {
   if (!mapContainer.value) return
-  map = L.map(mapContainer.value, { zoomControl: true }).setView([props.lat, props.lon], props.zoom)
+  map = L.map(mapContainer.value, { zoomControl: false }).setView([props.lat, props.lon], props.zoom)
+  
+  // Add zoom control to bottom left instead of top left
+  L.control.zoom({
+    position: 'bottomleft'
+  }).addTo(map)
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap',
   }).addTo(map)
@@ -114,7 +120,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="map-wrap" :class="{ 'map-wrap--fullscreen': fullscreen }">
-    <div ref="mapContainer" class="map-container" role="application" aria-label="地图选点" />
+    <div ref="mapContainer" class="map-container" role="application" aria-label="Map Picker" />
   </div>
 </template>
 

@@ -27,10 +27,10 @@ const reasons = () => topReasons(props.percentiles, 3)
 const comparison = () => comparisonText(props.percentiles, props.yearsBack)
 
 const levelZh = {
-  not_recommended: '不建议',
-  caution: '谨慎',
-  recommended: '较适宜',
-  unknown: '未知',
+  not_recommended: 'Not Recommended',
+  caution: 'Caution',
+  recommended: 'Recommended',
+  unknown: 'Unknown',
 }
 
 function levelText(lv) {
@@ -41,34 +41,33 @@ function levelText(lv) {
 <template>
   <div class="safety" :class="{ 'safety--overlay': overlay }">
     <div class="safety__scroll">
-      <h2 class="safety__h">AI 结论</h2>
+      <h2 class="safety__h">AI Conclusion</h2>
       <div v-if="!adviceApiConfigured" class="hint hint--muted">
-        未配置 <code>VITE_ADVICE_API_URL</code> 时不会请求 AI；下方为本地算法风险参考。
+        AI is not requested when <code>VITE_GEMINI_API_KEY</code> is not configured. The risk reference below is from the local algorithm.
       </div>
       <div v-else-if="aiAdviceLoading" class="ai-loading">
         <span class="ai-loading__dot" aria-hidden="true" />
-        正在生成建议…
+        Generating advice...
       </div>
       <p v-else-if="aiAdviceError" class="hint hint--err">{{ aiAdviceError }}</p>
       <div v-else-if="aiAdvice" class="ai-body">{{ aiAdvice }}</div>
-      <p v-else class="hint hint--muted">暂无 AI 正文（请检查后端返回的 JSON 字段）。</p>
+      <p v-else class="hint hint--muted">No AI response yet. Please wait or check the backend.</p>
 
-      <h3 class="safety__sub">本地风险</h3>
+      <h3 class="safety__sub">Local Risk</h3>
       <p class="risk-line">
         <span :class="['badge', badgeClass()]">{{ levelText(level) }}</span>
-        <span class="risk-score">综合指数 {{ score }}%</span>
+        <span class="risk-score">Composite Index {{ score }}%</span>
       </p>
 
       <div v-if="!hasHistory" class="hint hint--warn">
-        历史样本不足，分位仅供参考。请求 {{ archiveRequested }} / 成功 {{ archiveSuccess }} / 有效日
-        {{ historySampleDays }}。
+        Insufficient historical samples, percentiles are for reference only. Requested {{ archiveRequested }} / Success {{ archiveSuccess }} / Valid Days {{ historySampleDays }}.
       </div>
 
       <div v-if="reasons().length" class="reason-block">
-        <h4 class="tiny-title">主要因素</h4>
+        <h4 class="tiny-title">Key Factors</h4>
         <ul class="reason-list">
           <li v-for="r in reasons()" :key="r.key">
-            {{ r.label }} · 分位 {{ r.pct }}%
+            {{ r.label }} · Percentile {{ r.pct }}%
           </li>
         </ul>
       </div>

@@ -14,8 +14,8 @@ import LocationPicker from './components/LocationPicker.vue'
 import SafetyResult from './components/SafetyResult.vue'
 import DebugConsole from './components/DebugConsole.vue'
 
-const lat = ref(39.9042)
-const lon = ref(116.4074)
+const lat = ref(41.4993)
+const lon = ref(-81.6944)
 
 const loading = ref(false)
 const error = ref('')
@@ -52,7 +52,7 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
 
     const todayMetrics = aggregateDayMetrics(forecast.hourly, queryDate)
     if (!todayMetrics) {
-      error.value = '无法解析当日逐小时数据'
+      error.value = 'Cannot parse hourly data for today'
       return
     }
 
@@ -95,7 +95,7 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
       historySampleDays: validHistory.length,
     })
   } catch (e) {
-    error.value = e.message || '请求失败，请检查网络后重试。'
+    error.value = e.message || 'Request failed, please check your network and try again.'
   } finally {
     loading.value = false
   }
@@ -112,7 +112,7 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
     if (e?.code === 'ADVICE_API_NOT_CONFIGURED') {
       aiAdviceError.value = ''
     } else {
-      aiAdviceError.value = e?.message || 'AI 建议请求失败'
+      aiAdviceError.value = e?.message || 'AI advice request failed'
     }
   } finally {
     aiAdviceLoading.value = false
@@ -126,15 +126,15 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
 
     <header class="map-app__brand" aria-label="OutSafe">
       <span class="map-app__brand-name">OutSafe</span>
-      <span class="map-app__brand-sub">户外天气风险</span>
+      <span class="map-app__brand-sub">Outdoor Weather Risk</span>
     </header>
 
-    <aside class="map-app__sidebar" aria-label="选点与分析">
+    <aside class="map-app__sidebar" aria-label="Location and Analysis">
       <LocationPicker v-model:lat="lat" v-model:lon="lon" @submit="onLocationSubmit" />
 
       <div v-if="loading" class="overlay-card overlay-card--status" role="status" aria-live="polite">
         <div class="spinner" aria-hidden="true" />
-        <p class="status-text">正在获取预报与历史数据…</p>
+        <p class="status-text">Fetching forecast and historical data...</p>
       </div>
 
       <div v-else-if="error" class="overlay-card overlay-card--error">

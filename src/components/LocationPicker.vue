@@ -38,9 +38,9 @@ async function copyCoords() {
   const text = `${formatCoord(lat.value)}, ${formatCoord(lon.value)}`
   try {
     await navigator.clipboard.writeText(text)
-    copyHint.value = '已复制'
+    copyHint.value = 'Copied'
   } catch {
-    copyHint.value = '复制失败'
+    copyHint.value = 'Copy failed'
   }
   setTimeout(() => {
     copyHint.value = ''
@@ -60,62 +60,62 @@ function onSubmit() {
 
 <template>
   <div class="overlay-card">
-    <h2 class="overlay-card__title">选点与分析</h2>
-    <p class="overlay-card__lead">在地图上点击即可落点；经纬度会同步到此处，确认后点击分析。</p>
+    <h2 class="overlay-card__title">Location & Analysis</h2>
+    <p class="overlay-card__lead">Click on the map to drop a pin. Coordinates will sync here. Click analyze when ready.</p>
 
     <div class="coord-hero">
       <div class="coord-hero__block">
-        <span class="coord-hero__label">纬度</span>
+        <span class="coord-hero__label">Latitude</span>
         <input
           id="ov-lat"
           v-model.number="lat"
           class="coord-hero__input"
           type="number"
           step="any"
-          aria-label="纬度"
+          aria-label="Latitude"
         />
       </div>
       <div class="coord-hero__block">
-        <span class="coord-hero__label">经度</span>
+        <span class="coord-hero__label">Longitude</span>
         <input
           id="ov-lon"
           v-model.number="lon"
           class="coord-hero__input"
           type="number"
           step="any"
-          aria-label="经度"
+          aria-label="Longitude"
         />
       </div>
     </div>
     <div class="coord-actions">
-      <button type="button" class="btn-ghost" @click="copyCoords">复制坐标</button>
+      <button type="button" class="btn-ghost" @click="copyCoords">Copy Coords</button>
       <span v-if="copyHint" class="copy-hint">{{ copyHint }}</span>
     </div>
 
     <details class="advanced">
-      <summary>更多参数</summary>
+      <summary>Advanced Options</summary>
       <div class="form-group" style="margin-top: 0.65rem">
-        <label for="ov-elev">海拔（米，可选）</label>
-        <input id="ov-elev" v-model="elevation" type="number" step="any" placeholder="留空则自动" />
+        <label for="ov-elev">Elevation (m, optional)</label>
+        <input id="ov-elev" v-model="elevation" type="number" step="any" placeholder="Leave empty for auto" />
       </div>
       <div class="form-group">
-        <label for="ov-years">历史对比年数</label>
+        <label for="ov-years">Historical Comparison (Years)</label>
         <input id="ov-years" v-model.number="yearsBack" type="number" min="1" max="10" />
       </div>
     </details>
 
     <div class="form-group" style="margin-bottom: 0.5rem">
-      <label for="ov-act">活动说明（发给 AI）</label>
+      <label for="ov-act">Activity Description (For AI)</label>
       <textarea
         id="ov-act"
         v-model="activityPrompt"
         class="activity-textarea"
         rows="3"
-        placeholder="例如：徒步爬山，对大风降雨敏感；或仅短途驾车。"
+        placeholder="e.g.: Hiking up a mountain, sensitive to strong winds and rain; or just a short drive."
       />
     </div>
 
-    <button type="button" class="btn-primary" @click="onSubmit">分析此位置</button>
+    <button type="button" class="btn-primary" @click="onSubmit">Analyze Location</button>
   </div>
 </template>
 
