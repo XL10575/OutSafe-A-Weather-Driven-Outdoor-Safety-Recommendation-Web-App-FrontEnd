@@ -44,6 +44,24 @@ export function aggregateDayMetrics(hourly, date) {
 }
 
 /**
+ * Split a multi-day hourly archive into one aggregate per calendar day (sorted).
+ * @param {Object} hourly - Open-Meteo hourly object
+ * @returns {ReturnType<typeof aggregateDayMetrics>[]}
+ */
+export function aggregateMonthDailyFromHourly(hourly) {
+  if (!hourly?.time?.length) return []
+  const dates = new Set()
+  for (const t of hourly.time) {
+    const d = String(t).slice(0, 10)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) dates.add(d)
+  }
+  return [...dates]
+    .sort()
+    .map((d) => aggregateDayMetrics(hourly, d))
+    .filter(Boolean)
+}
+
+/**
  * Percentile rank of value in an array (0~100)
  */
 function percentileRank(value, sortedArr) {
@@ -133,6 +151,8 @@ export function comparisonText(percentiles, n) {
   if (percentiles.wind <= 30) parts.push(`milder wind (${percentiles.wind}%)`)
   if (percentiles.rain <= 30) parts.push(`drier than usual (${percentiles.rain}%)`)
   if (percentiles.cold <= 30) parts.push(`warmer feels-like (${percentiles.cold}%)`)
-  if (parts.length === 0) return `Compared with the same day in the past ${n} years, conditions are close to typical.`
-  return `Compared with the same day in the past ${n} years: ${parts.join(', ')}.`
+  if (parts.length === 0) {
+    return `Compared with daily conditions in the same calendar month over the past ${n} years, today is close to typical.`
+  }
+  return `Compared with daily conditions in the same calendar month over the past ${n} years: ${parts.join(', ')}.`
 }

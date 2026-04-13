@@ -9,6 +9,7 @@ const props = defineProps({
   hasHistory: { type: Boolean, default: true },
   archiveRequested: { type: Number, default: 0 },
   archiveSuccess: { type: Number, default: 0 },
+  historySampleDays: { type: Number, default: 0 },
 })
 
 const badgeClass = () => {
@@ -29,8 +30,8 @@ const comparison = () => comparisonText(props.percentiles, props.yearsBack)
       <span class="muted" style="margin-left: 0.5rem;">Overall risk {{ score }}%</span>
     </p>
     <div v-if="!hasHistory" class="no-history-tip">
-      <p>No same-day historical data available. Percentiles are approximate (50% means no historical comparison).</p>
-      <p class="no-history-reasons">Possible reasons: requested {{ archiveRequested }} years, succeeded {{ archiveSuccess }}. If 0, it is usually due to network issues, Open-Meteo rate limiting, or missing archives for that area/date.</p>
+      <p>No historical month data available. Percentiles are approximate (50% means no historical comparison).</p>
+      <p class="no-history-reasons">Requested {{ archiveRequested }} past-year month fetches, succeeded {{ archiveSuccess }}, daily samples parsed {{ historySampleDays }}. If samples are 0, check network, Open-Meteo rate limits, or archive coverage for that area.</p>
     </div>
 
     <div v-if="reasons().length" class="reason-block">

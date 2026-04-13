@@ -44,7 +44,7 @@ function onSubmit() {
       <input v-model="elevation" type="number" step="any" placeholder="Leave blank to auto-detect" />
     </div>
     <div class="form-group">
-      <label>Past years to compare (same day)</label>
+      <label>Past years to compare (same month, all days per year)</label>
       <input v-model.number="yearsBack" type="number" min="1" max="10" />
     </div>
     <button type="button" @click="onSubmit">Get outdoor safety advice</button>

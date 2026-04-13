@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue'
-import { fetchForecast, fetchArchiveSameDay } from './api/weather'
+import { fetchForecast, fetchArchiveSameMonth } from './api/weather'
 import {
   aggregateDayMetrics,
+  aggregateMonthDailyFromHourly,
   computePercentiles,
   compositeRisk,
 } from './utils/risk'
@@ -31,18 +32,16 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
       return
     }
 
-    const { list: archiveList, requested: archiveRequested } = await fetchArchiveSameDay({
+    const { list: archiveList, requested: archiveRequested } = await fetchArchiveSameMonth({
       lat,
       lon,
       elevation,
       date: queryDate,
       yearsBack,
     })
-    // Each archive response is for that past year; aggregate using its own date (not queryDate)
-    const historyMetricsList = archiveList.map((ar) => {
-      const dateInArchive = ar.hourly?.time?.[0]?.slice(0, 10)
-      return aggregateDayMetrics(ar.hourly, dateInArchive || queryDate)
-    })
+    const historyMetricsList = archiveList.flatMap((ar) =>
+      aggregateMonthDailyFromHourly(ar.hourly)
+    )
     const validHistory = historyMetricsList.filter(Boolean)
     const percentiles = computePercentiles(todayMetrics, validHistory)
     const { score, level } = compositeRisk(percentiles)
@@ -55,6 +54,7 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
       hasHistory: validHistory.length > 0,
       archiveRequested,
       archiveSuccess: archiveList.length,
+      historySampleDays: validHistory.length,
     }
   } catch (e) {
     error.value = e.message || 'Request failed. Please check your network and try again.'
@@ -78,5 +78,6 @@ async function onLocationSubmit({ lat, lon, elevation, yearsBack }) {
     :has-history="result.hasHistory"
     :archive-requested="result.archiveRequested"
     :archive-success="result.archiveSuccess"
+    :history-sample-days="result.historySampleDays"
   />
 </template>
