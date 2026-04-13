@@ -33,9 +33,10 @@ function toggleConsole() {
 <style scoped>
 .debug-console {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 400px;
+  bottom: 12px;
+  left: 12px;
+  right: auto;
+  width: min(400px, calc(100vw - 24px));
   max-width: 90vw;
   background-color: #1e1e1e;
   color: #d4d4d4;

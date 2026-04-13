@@ -2,6 +2,7 @@
 import { levelLabel, topReasons, comparisonText } from '../utils/risk'
 
 const props = defineProps({
+  overlay: { type: Boolean, default: false },
   level: { type: String, default: 'unknown' },
   score: { type: Number, default: 0 },
   percentiles: { type: Object, default: () => ({}) },
@@ -24,62 +25,203 @@ const badgeClass = () => {
 
 const reasons = () => topReasons(props.percentiles, 3)
 const comparison = () => comparisonText(props.percentiles, props.yearsBack)
+
+const levelZh = {
+  not_recommended: '不建议',
+  caution: '谨慎',
+  recommended: '较适宜',
+  unknown: '未知',
+}
+
+function levelText(lv) {
+  return levelZh[lv] ?? levelLabel(lv)
+}
 </script>
 
 <template>
-  <div class="card">
-    <h2 style="margin-top: 0;">AI Outdoor Safety Advice</h2>
-    <div v-if="!adviceApiConfigured" class="advice-skip muted">
-      didn't set <code>VITE_GEMINI_API_KEY</code> so it won't request AI; below is the risk reference calculated by the local algorithm.
-    </div>
-    <div v-else-if="aiAdviceLoading" class="advice-loading">Generating advice based on your activity description…</div>
-    <p v-else-if="aiAdviceError" class="advice-error">{{ aiAdviceError }}</p>
-    <div v-else-if="aiAdvice" class="ai-advice-body">{{ aiAdvice }}</div>
-    <p v-else class="muted">No AI response (Gemini API returned an empty response).</p>
+  <div class="safety" :class="{ 'safety--overlay': overlay }">
+    <div class="safety__scroll">
+      <h2 class="safety__h">AI 结论</h2>
+      <div v-if="!adviceApiConfigured" class="hint hint--muted">
+        未配置 <code>VITE_ADVICE_API_URL</code> 时不会请求 AI；下方为本地算法风险参考。
+      </div>
+      <div v-else-if="aiAdviceLoading" class="ai-loading">
+        <span class="ai-loading__dot" aria-hidden="true" />
+        正在生成建议…
+      </div>
+      <p v-else-if="aiAdviceError" class="hint hint--err">{{ aiAdviceError }}</p>
+      <div v-else-if="aiAdvice" class="ai-body">{{ aiAdvice }}</div>
+      <p v-else class="hint hint--muted">暂无 AI 正文（请检查后端返回的 JSON 字段）。</p>
 
-    <h2 class="section-title">Local risk reference (percentiles and composite score)</h2>
-    <p>
-      <span :class="['badge', badgeClass()]">{{ levelLabel(level) }}</span>
-      <span class="muted" style="margin-left: 0.5rem;">Composite risk index {{ score }}% (for model and human comparison, not the final conclusion)</span>
-    </p>
-    <div v-if="!hasHistory" class="no-history-tip">
-      <p>No historical month data available. Percentiles are approximate (50% means no historical comparison).</p>
-      <p class="no-history-reasons">Requested {{ archiveRequested }} past-year month fetches, succeeded {{ archiveSuccess }}, daily samples parsed {{ historySampleDays }}. If samples are 0, check network, Open-Meteo rate limits, or archive coverage for that area.</p>
-    </div>
+      <h3 class="safety__sub">本地风险</h3>
+      <p class="risk-line">
+        <span :class="['badge', badgeClass()]">{{ levelText(level) }}</span>
+        <span class="risk-score">综合指数 {{ score }}%</span>
+      </p>
 
-    <div v-if="reasons().length" class="reason-block">
-      <h3 class="sub">Key drivers</h3>
-      <ul class="reason-list">
-        <li v-for="r in reasons()" :key="r.key">
-          {{ r.label }}: historical percentile {{ r.pct }}%
-        </li>
-      </ul>
-    </div>
+      <div v-if="!hasHistory" class="hint hint--warn">
+        历史样本不足，分位仅供参考。请求 {{ archiveRequested }} / 成功 {{ archiveSuccess }} / 有效日
+        {{ historySampleDays }}。
+      </div>
 
-    <div class="comparison">
-      {{ comparison() }}
+      <div v-if="reasons().length" class="reason-block">
+        <h4 class="tiny-title">主要因素</h4>
+        <ul class="reason-list">
+          <li v-for="r in reasons()" :key="r.key">
+            {{ r.label }} · 分位 {{ r.pct }}%
+          </li>
+        </ul>
+      </div>
+
+      <div class="comparison">{{ comparison() }}</div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.section-title { margin: 1.25rem 0 0.5rem; font-size: 1.1rem; }
-.muted { color: var(--muted); font-size: 0.9rem; }
-.sub { font-size: 1rem; margin: 0.75rem 0 0.25rem; color: var(--muted); }
-.reason-block { margin-top: 0.5rem; }
-.no-history-tip { font-size: 0.85rem; color: var(--warning); margin-top: 0.5rem; }
-.no-history-tip p { margin: 0.25rem 0; }
-.no-history-reasons { color: var(--muted); font-size: 0.8rem; }
-.advice-skip { font-size: 0.9rem; margin-bottom: 0.5rem; }
-.advice-loading { color: var(--muted); margin: 0.25rem 0 0.75rem; }
-.advice-error { color: var(--danger, #c0392b); margin: 0.25rem 0 0.75rem; }
-.ai-advice-body {
+.safety--overlay {
+  background: rgba(22, 29, 39, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.safety__scroll {
+  padding: 1rem 1.1rem 1.1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 0;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.safety__scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.safety__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.safety__scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.safety__scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.safety__h {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.safety__sub {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tiny-title {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  margin: 0 0 0.5rem;
+}
+
+.hint--muted {
+  color: var(--muted);
+}
+
+.hint--err {
+  color: #ff9d97;
+  margin: 0 0 0.5rem;
+}
+
+.hint--warn {
+  color: var(--warning);
+  margin: 0.5rem 0;
+  font-size: 0.78rem;
+}
+
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.ai-loading__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+.ai-body {
   white-space: pre-wrap;
   line-height: 1.55;
-  margin: 0.25rem 0 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: var(--card-subtle, rgba(0, 0, 0, 0.04));
-  border: 1px solid var(--border, #ddd);
+  font-size: 0.875rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.35rem;
+}
+
+.risk-line {
+  margin: 0 0 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.risk-score {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.reason-block {
+  margin-top: 0.35rem;
+}
+
+.comparison {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
 }
 </style>
