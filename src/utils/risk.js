@@ -158,6 +158,60 @@ export function comparisonText(percentiles, n) {
 }
 
 /**
+ * @param {number[]} values
+ * @returns {{ min: number, max: number, p25: number, p50: number, p75: number, n: number } | null}
+ */
+export function historyDistribution(values) {
+  const v = values
+    .map((x) => Number(x))
+    .filter((x) => x != null && !Number.isNaN(x))
+    .sort((a, b) => a - b)
+  if (!v.length) return null
+  const quantileSorted = (sorted, q) => {
+    const t = Math.min(1, Math.max(0, q))
+    const pos = (sorted.length - 1) * t
+    const lo = Math.floor(pos)
+    const hi = Math.ceil(pos)
+    const wt = pos - lo
+    if (lo === hi) return sorted[lo]
+    return sorted[lo] * (1 - wt) + sorted[hi] * wt
+  }
+  return {
+    min: v[0],
+    max: v[v.length - 1],
+    p25: quantileSorted(v, 0.25),
+    p50: quantileSorted(v, 0.5),
+    p75: quantileSorted(v, 0.75),
+    n: v.length,
+  }
+}
+
+/**
+ * Rows for “today vs same-month history” charts (absolute units).
+ * @param {ReturnType<typeof aggregateDayMetrics>} todayMetrics
+ * @param {ReturnType<typeof aggregateDayMetrics>[]} historyMetricsList
+ */
+export function buildCompareVizSeries(todayMetrics, historyMetricsList) {
+  const hist = (historyMetricsList || []).filter(Boolean)
+  const pick = (path) => hist.map((m) => m[path]).filter((x) => x != null && !Number.isNaN(Number(x)))
+
+  const defs = [
+    { key: 'gust', path: 'risk_wind', label: 'Max gust', unit: ' km/h' },
+    { key: 'rain', path: 'risk_rain', label: 'Daily precip', unit: ' mm' },
+    { key: 'cold', path: 'risk_cold', label: 'Min apparent', unit: ' °C' },
+    { key: 'tempHi', path: 'temp_max', label: 'Daily high', unit: ' °C' },
+  ]
+
+  return defs.map((d) => ({
+    key: d.key,
+    label: d.label,
+    unit: d.unit,
+    hist: historyDistribution(pick(d.path)),
+    today: todayMetrics?.[d.path] != null ? Number(todayMetrics[d.path]) : null,
+  }))
+}
+
+/**
  * Serializable payload for an external “advice” API / LLM.
  * Keeps raw metrics + percentile story so the model can judge fitness to the user’s activity.
  *

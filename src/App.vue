@@ -6,6 +6,7 @@ import {
   aggregateDayMetrics,
   aggregateMonthDailyFromHourly,
   buildAdviceContext,
+  buildCompareVizSeries,
   computePercentiles,
   compositeRisk,
 } from './utils/risk'
@@ -80,6 +81,7 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
       archiveRequested,
       archiveSuccess: archiveList.length,
       historySampleDays: validHistory.length,
+      vizSeries: buildCompareVizSeries(todayMetrics, validHistory),
     }
 
     adviceContext = buildAdviceContext({
@@ -152,6 +154,7 @@ async function onLocationSubmit({ lat: subLat, lon: subLon, elevation, yearsBack
         :archive-requested="result.archiveRequested"
         :archive-success="result.archiveSuccess"
         :history-sample-days="result.historySampleDays"
+        :viz-series="result.vizSeries"
         :advice-api-configured="isAdviceApiConfigured()"
         :ai-advice="aiAdvice"
         :ai-advice-loading="aiAdviceLoading"

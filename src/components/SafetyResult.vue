@@ -1,11 +1,13 @@
 <script setup>
 import { levelLabel, topReasons, comparisonText } from '../utils/risk'
+import WeatherCompareViz from './WeatherCompareViz.vue'
 
 const props = defineProps({
   overlay: { type: Boolean, default: false },
   level: { type: String, default: 'unknown' },
   score: { type: Number, default: 0 },
   percentiles: { type: Object, default: () => ({}) },
+  vizSeries: { type: Array, default: () => [] },
   yearsBack: { type: Number, default: 5 },
   hasHistory: { type: Boolean, default: true },
   archiveRequested: { type: Number, default: 0 },
@@ -62,6 +64,8 @@ function levelText(lv) {
       <div v-if="!hasHistory" class="hint hint--warn">
         Insufficient historical samples, percentiles are for reference only. Requested {{ archiveRequested }} / Success {{ archiveSuccess }} / Valid Days {{ historySampleDays }}.
       </div>
+
+      <WeatherCompareViz v-if="vizSeries && vizSeries.length" :rows="vizSeries" :has-history="hasHistory" :years-back="yearsBack" />
 
       <div v-if="reasons().length" class="reason-block">
         <h4 class="tiny-title">Key Factors</h4>
